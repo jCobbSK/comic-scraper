@@ -5,6 +5,7 @@ var cheerio = require('cheerio');
 var async = require('async');
 var request = require('request');
 var mkdirp = require('mkdirp');
+var gm = require('gm');
 
 module.exports = {
   downloadComicBookImages

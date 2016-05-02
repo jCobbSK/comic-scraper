@@ -2,7 +2,6 @@
 
 var downloadComicBookImages = require('./app/downloader').downloadComicBookImages;
 var createBook = require('./app/pdf').createBook;
-var gm = require('gm');
 
 downloadComicBookImages('deadpool', '1', function(err, imgPaths){
   if (err) {

@@ -79,7 +79,7 @@ function downloadImages(url, imgDestPath, imgName, getImageUrlsFromPageFunction,
                   gm(downloadImagePath)
                     .resize(984, 1512)
                     .write(downloadImagePath+'min', (err) => {
-                      // fs.unlinkSync(downloadImagePath);
+                      fs.unlinkSync(downloadImagePath);
                       next(err, downloadImagePath+'min');
                     });
                 });

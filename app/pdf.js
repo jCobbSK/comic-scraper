@@ -26,7 +26,7 @@ function createBook(destFolder, name, imagePaths) {
 
   doc.end();
 
-  // imagePaths.forEach((img) => {
-  //   fs.unlinkSync(img);
-  // });
+  imagePaths.forEach((img) => {
+    fs.unlinkSync(img);
+  });
 }

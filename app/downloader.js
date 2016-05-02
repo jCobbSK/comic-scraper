@@ -71,7 +71,16 @@ function downloadImages(url, imgDestPath, imgName, getImageUrlsFromPageFunction,
               if (response.statusCode === 200) {
                 let downloadImagePath = `${imgDestPath}/${imgName}_${index}.${ext}`;
                 fs.writeFile(downloadImagePath, response.body, (err) => {
-                  next(err, downloadImagePath);
+                  if (err) {
+                    next(err);
+                    return;
+                  }
+                  gm(downloadImagePath)
+                    .resize(495, 756)
+                    .write(downloadImagePath+'min', (err) => {
+                      fs.unlinkSync(downloadImagePath);
+                      next(err, downloadImagePath+'min');
+                    });
                 });
               } else {
                 next(response.statusCode);

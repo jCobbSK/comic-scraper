@@ -2,6 +2,7 @@
 
 var pdf = require('pdfkit');
 var fs = require('fs');
+var mkdirp = require('mkdirp');
 
 module.exports = {
   createBook
@@ -13,6 +14,8 @@ function createBook(destFolder, name, imagePaths) {
     margin: 0,
     size: [495, 756]
   });
+
+  mkdirp.sync(destFolder);
 
   doc.pipe(fs.createWriteStream(`${destFolder}/${name}.pdf`));
 

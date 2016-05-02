@@ -77,7 +77,7 @@ function downloadImages(url, imgDestPath, imgName, getImageUrlsFromPageFunction,
                     return;
                   }
                   gm(downloadImagePath)
-                    .resize(495, 756)
+                    .resize(984, 1512)
                     .write(downloadImagePath+'min', (err) => {
                       fs.unlinkSync(downloadImagePath);
                       next(err, downloadImagePath+'min');

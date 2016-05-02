@@ -4,6 +4,7 @@ var fs = require('fs');
 var cheerio = require('cheerio');
 var async = require('async');
 var request = require('request');
+var mkdirp = require('mkdirp');
 
 module.exports = {
   downloadComicBookImages
@@ -15,7 +16,7 @@ function downloadComicBookImages(name, issueNumber, done) {
     let numberOfPages = $('#e1 option').length;
     let downloadedPages = 0;
     let imgDir = `./tmp/${name}_${issueNumber}`;
-    fs.mkdirSync(imgDir);
+    mkdirp.sync(imgDir);
     let downloadImagesReqs = [];
     for (let i=0; i<numberOfPages; i++) {
       downloadImagesReqs.push(

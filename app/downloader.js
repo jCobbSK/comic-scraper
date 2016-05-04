@@ -6,13 +6,57 @@ var async = require('async');
 var request = require('request');
 var mkdirp = require('mkdirp');
 var gm = require('gm');
+var createBook = require('./pdf').createBook;
 
 module.exports = {
-  downloadComicBookImages
+  downloadAllIssues: downloadAllIssues,
+  downloadComicIssue: downloadComicIssue
+}
+
+function downloadAllIssues(comicName, done) {
+  request(`http://hellocomic.com/${comicName.toLowerCase()}/c1/p1`, (err, response) => {
+    let $ = cheerio.load(response.body);
+    let numberOfIssues = $('#e2 option').length;
+
+    let downloadReqs = [];
+
+    for (let i=0; i<numberOfIssues; i++) {
+      downloadReqs.push(
+        next => downloadComicIssue(comicName, (i + 1)+'', next)
+      );
+    }
+
+    async.waterfall(downloadReqs, done);
+  });
+}
+
+function downloadComicIssue(comicName, issueNumber, done) {
+  downloadComicBookImages(comicName, issueNumber, function(err, imgPaths) {
+    if (err) {
+      done(err);
+      return;
+    }
+
+    imgPaths = imgPaths.sort((a,b) => {
+      let aSplit = a.split('/').pop().split('.')[0].split('_');
+      let bSplit = b.split('/').pop().split('.')[0].split('_');
+      if (parseInt(aSplit[0]) < parseInt(bSplit[0])) {
+        return -1;
+      } else if (parseInt(aSplit[0]) > parseInt(bSplit[0])) {
+        return 1;
+      } else {
+        return parseInt(aSplit[1]) - parseInt(bSplit[1]);
+      }
+    });
+
+    createBook(`./issues/${comicName}`, `${comicName}#${issueNumber}`, imgPaths);
+    console.log(`${comicName}#${issueNumber} DOWNLOADED!!!`);
+    done(null);
+  })
 }
 
 function downloadComicBookImages(name, issueNumber, done) {
-  request(`http://hellocomic.com/${name}/c${issueNumber}/p1`, (err, response) => {
+  request(`http://hellocomic.com/${name.toLowerCase()}/c${issueNumber}/p1`, (err, response) => {
     let $ = cheerio.load(response.body);
     let numberOfPages = $('#e1 option').length;
     let downloadedPages = 0;
@@ -22,7 +66,7 @@ function downloadComicBookImages(name, issueNumber, done) {
     for (let i=0; i<numberOfPages; i++) {
       downloadImagesReqs.push(
         (next) => {
-          downloadImages(`http://hellocomic.com/${name}/c${issueNumber}/p${i+1}`, imgDir, i, (html) => {
+          downloadImages(`http://hellocomic.com/${name.toLowerCase()}/c${issueNumber}/p${i+1}`, imgDir, i, (html) => {
             let $ = cheerio.load(html);
             return [$('.coverIssue img').prop('src')];
           }, (err, response) => {

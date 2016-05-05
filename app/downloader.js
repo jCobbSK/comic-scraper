@@ -7,6 +7,7 @@ var request = require('request');
 var mkdirp = require('mkdirp');
 var gm = require('gm');
 var createBook = require('./pdf').createBook;
+var Progress = require('progress');
 
 module.exports = {
   downloadAllIssues: downloadAllIssues,
@@ -50,7 +51,7 @@ function downloadComicIssue(comicName, issueNumber, done) {
     });
 
     createBook(`./issues/${comicName}`, `${comicName}#${issueNumber}`, imgPaths);
-    console.log(`${comicName}#${issueNumber} DOWNLOADED!!!`);
+    console.log(`${comicName}#${issueNumber}.pdf created!`);
     done(null);
   })
 }
@@ -59,8 +60,11 @@ function downloadComicBookImages(name, issueNumber, done) {
   request(`http://hellocomic.com/${name.toLowerCase()}/c${issueNumber}/p1`, (err, response) => {
     let $ = cheerio.load(response.body);
     let numberOfPages = $('#e1 option').length;
-    let downloadedPages = 0;
     let imgDir = `./tmp/${name}_${issueNumber}`;
+    let progress = new Progress(`${name}#${issueNumber} [:bar] :percent :elapsed`, {
+      total: numberOfPages,
+      width: 20
+    });
     mkdirp.sync(imgDir);
     let downloadImagesReqs = [];
     for (let i=0; i<numberOfPages; i++) {
@@ -70,7 +74,7 @@ function downloadComicBookImages(name, issueNumber, done) {
             let $ = cheerio.load(html);
             return [$('.coverIssue img').prop('src')];
           }, (err, response) => {
-            console.log(`${name} #${issueNumber}: ${++downloadedPages}/${numberOfPages}`);
+            progress.tick();
             next(err, response);
           });
         }

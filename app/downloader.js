@@ -8,6 +8,7 @@ var mkdirp = require('mkdirp');
 var gm = require('gm');
 var createBook = require('./pdf').createBook;
 var Progress = require('progress');
+var winston = require('winston');
 
 module.exports = {
   downloadAllIssues: downloadAllIssues,
@@ -16,6 +17,11 @@ module.exports = {
 
 function downloadAllIssues(comicName, done) {
   request(`http://hellocomic.com/${comicName.toLowerCase()}/c1/p1`, (err, response) => {
+    if (err) {
+      err['downloadAllIssues'] = `${comicName}`;
+      done(err);
+      return;
+    }
     let $ = cheerio.load(response.body);
     let numberOfIssues = $('#e2 option').length;
 
@@ -34,6 +40,7 @@ function downloadAllIssues(comicName, done) {
 function downloadComicIssue(comicName, issueNumber, done) {
   downloadComicBookImages(comicName, issueNumber, function(err, imgPaths) {
     if (err) {
+      err['downloadComicBookImages'] = `${comicName}#${issueNumber}`;
       done(err);
       return;
     }
@@ -58,22 +65,30 @@ function downloadComicIssue(comicName, issueNumber, done) {
 
 function downloadComicBookImages(name, issueNumber, done) {
   request(`http://hellocomic.com/${name.toLowerCase()}/c${issueNumber}/p1`, (err, response) => {
+    if (err) {
+      err['downloadComicBookImages'] = `${name}#${issueNumber}`;
+      done(err);
+      return;
+    }
     let $ = cheerio.load(response.body);
     let numberOfPages = $('#e1 option').length;
     let imgDir = `./tmp/${name}_${issueNumber}`;
     let progress = new Progress(`${name}#${issueNumber} [:bar] :percent :elapsed`, {
-      total: numberOfPages,
-      width: 20
+      total: numberOfPages
     });
     mkdirp.sync(imgDir);
     let downloadImagesReqs = [];
     for (let i=0; i<numberOfPages; i++) {
+      let link = `http://hellocomic.com/${name.toLowerCase()}/c${issueNumber}/p${i+1}`;
       downloadImagesReqs.push(
         (next) => {
-          downloadImages(`http://hellocomic.com/${name.toLowerCase()}/c${issueNumber}/p${i+1}`, imgDir, i, (html) => {
+          downloadImages(link, imgDir, i, (html) => {
             let $ = cheerio.load(html);
             return [$('.coverIssue img').prop('src')];
           }, (err, response) => {
+            if (err) {
+              err['downloadImages'] = `${name}#${issueNumber}p${i+1}`;
+            }
             progress.tick();
             next(err, response);
           });
@@ -98,6 +113,7 @@ function downloadComicBookImages(name, issueNumber, done) {
 function downloadImages(url, imgDestPath, imgName, getImageUrlsFromPageFunction, finishCallback) {
   request.get(url, (err, response, body) => {
     if (err) {
+      err['downloadImage'] = `${imgName}`;
       finishCallback(err);
       return;
     }
@@ -114,6 +130,7 @@ function downloadImages(url, imgDestPath, imgName, getImageUrlsFromPageFunction,
               encoding: null
             }, (err, response) => {
               if (err) {
+                err['Img download req'] = `${imgPath}`;
                 next(err);
                 return;
               }
@@ -137,7 +154,7 @@ function downloadImages(url, imgDestPath, imgName, getImageUrlsFromPageFunction,
             });
           }
         );
-        async.parallel(imgDownloadReqs, (err, results) => {
+        async.waterfall(imgDownloadReqs, (err, results) => {
           finishCallback(err, results);
         });
       });
